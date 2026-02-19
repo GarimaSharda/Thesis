@@ -171,3 +171,53 @@ summary(cox_strat)
 
 # Check Assumptions
 cox.zph(cox_strat)
+#-----------------------------------------------------------
+# 8. Advanced Diagnostics & Visualization (NEW ADDITION)
+#-----------------------------------------------------------
+# 8.1 Forest Plot (Use the Unstratified Model 'cox1')
+# Extract Hazard Ratios and Confidence Intervals
+cox_summary <- summary(cox1)
+hr_data <- data.frame(
+  term = rownames(cox_summary$conf.int),
+  hr = cox_summary$conf.int[, "exp(coef)"],
+  lower = cox_summary$conf.int[, "lower .95"],
+  upper = cox_summary$conf.int[, "upper .95"]
+)
+
+# Clean up variable names for the plot
+hr_data$term <- gsub("position_simple", "Pos: ", hr_data$term)
+hr_data$term <- gsub("debut_band", "Debut: ", hr_data$term)
+hr_data$term <- gsub("inj_band", "Injuries: ", hr_data$term)
+hr_data$term <- gsub("height_group", "Height: ", hr_data$term)
+
+# Create the Plot using ggplot2
+ggplot(hr_data, aes(y = term, x = hr)) +
+  geom_point(size = 3, color = "blue") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(
+    title = "Hazard Ratios for Career Retirement Risk",
+    subtitle = "Right of Red Line = Higher Risk | Left of Red Line = Protective",
+    x = "Hazard Ratio (95% CI)",
+    y = ""
+  )
+
+# 8.2 Time-Varying Effects (Use the Stratified Model 'cox_strat' for validity)
+# This checks assumptions for the non-position variables
+zph_result <- cox.zph(cox_strat)
+
+# Plot for Injuries
+ggcoxzph(zph_result, var = "inj_band", 
+         caption = "Time-Varying Effect of Injuries",
+         ggtheme = theme_minimal())
+
+# Plot for Matches
+ggcoxzph(zph_result, var = "total_matches_club", 
+         caption = "Time-Varying Effect of Matches Played",
+         ggtheme = theme_minimal())
+
+# Plot for Debut Age
+ggcoxzph(zph_result, var = "debut_band", 
+         caption = "Time-Varying Effect of Debut Age",
+         ggtheme = theme_minimal())
